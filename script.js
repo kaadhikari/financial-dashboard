@@ -80,7 +80,7 @@ class MultiUserFinancialDashboard {
         // Update greetings and job type display
         document.getElementById('user-greeting').textContent = this.currentUser;
         document.getElementById('job-type-display').textContent = 
-            user.jobType === 'server' ? 'Server/Tips-based Tracking' : 'Salary-based Financial Tracking';
+            user.jobType === 'server' ? '💰 Server - Track your daily tips' : '💼 Salary - Manage your income & expenses';
 
         // Update income section based on job type
         const incomeSection = document.getElementById('income-section');
@@ -88,7 +88,7 @@ class MultiUserFinancialDashboard {
             incomeSection.innerHTML = `
                 <div class="form-group">
                     <label for="income-amount">Daily Tips ($):</label>
-                    <input type="number" id="income-amount" min="0" step="0.01" required>
+                    <input type="number" id="income-amount" min="0" step="0.01" placeholder="Enter tips amount" required>
                 </div>
             `;
             document.getElementById('income-label').textContent = 'Total Tips';
@@ -96,7 +96,7 @@ class MultiUserFinancialDashboard {
             incomeSection.innerHTML = `
                 <div class="form-group">
                     <label for="income-amount">Income Amount ($):</label>
-                    <input type="number" id="income-amount" min="0" step="0.01" required>
+                    <input type="number" id="income-amount" min="0" step="0.01" placeholder="Enter income amount" required>
                 </div>
                 <div class="form-group">
                     <label for="income-type">Income Type:</label>
@@ -145,14 +145,28 @@ class MultiUserFinancialDashboard {
 
     setupEventListeners() {
         // Remove existing listeners to avoid duplicates
-        document.getElementById('save-entry').replaceWith(document.getElementById('save-entry').cloneNode(true));
-        document.getElementById('add-expense').replaceWith(document.getElementById('add-expense').cloneNode(true));
-        document.getElementById('clear-user-data').replaceWith(document.getElementById('clear-user-data').cloneNode(true));
+        const saveBtn = document.getElementById('save-entry');
+        const addExpenseBtn = document.getElementById('add-expense');
+        const clearBtn = document.getElementById('clear-user-data');
+
+        saveBtn.replaceWith(saveBtn.cloneNode(true));
+        addExpenseBtn.replaceWith(addExpenseBtn.cloneNode(true));
+        clearBtn.replaceWith(clearBtn.cloneNode(true));
 
         // Add new listeners
         document.getElementById('save-entry').addEventListener('click', () => this.saveEntry());
         document.getElementById('add-expense').addEventListener('click', () => this.addExpenseField());
         document.getElementById('clear-user-data').addEventListener('click', () => this.clearUserData());
+
+        // Add event listener for the first remove button
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-expense')) {
+                const container = document.getElementById('expenses-container');
+                if (container.children.length > 1) {
+                    container.removeChild(e.target.parentElement);
+                }
+            }
+        });
     }
 
     renderUserList() {
@@ -177,18 +191,25 @@ class MultiUserFinancialDashboard {
         });
     }
 
-    // ... (rest of the methods like saveEntry, addExpenseField, updateDashboard, etc. 
-    // will be similar but now they'll use this.currentUser and this.users[this.currentUser].entries)
-
     saveEntry() {
-        if (!this.currentUser) return;
+        if (!this.currentUser) {
+            alert('Please log in first');
+            return;
+        }
 
         const date = document.getElementById('date').value;
-        const income = parseFloat(document.getElementById('income-amount').value);
+        const incomeInput = document.getElementById('income-amount').value;
+        
+        if (!date || !incomeInput) {
+            alert('Please enter a valid date and income amount');
+            return;
+        }
+
+        const income = parseFloat(incomeInput);
         const user = this.users[this.currentUser];
         
-        if (!date || isNaN(income)) {
-            alert('Please enter a valid date and income amount');
+        if (isNaN(income) || income < 0) {
+            alert('Please enter a valid income amount');
             return;
         }
 
@@ -198,14 +219,17 @@ class MultiUserFinancialDashboard {
         
         expenseEntries.forEach(entry => {
             const category = entry.querySelector('.expense-category').value;
-            const amount = parseFloat(entry.querySelector('.expense-amount').value);
+            const amountInput = entry.querySelector('.expense-amount').value;
             
-            if (!isNaN(amount) && amount > 0) {
-                expenses.push({ category, amount });
+            if (amountInput && amountInput !== '') {
+                const amount = parseFloat(amountInput);
+                if (!isNaN(amount) && amount > 0) {
+                    expenses.push({ category, amount });
+                }
             }
         });
 
-        // Save entry with additional data for salary users
+        // Save entry with additional data
         const entryData = {
             income,
             expenses,
@@ -224,12 +248,229 @@ class MultiUserFinancialDashboard {
         this.renderHistory();
         this.clearForm();
         
-        alert('Entry saved successfully!');
+        // Add success animation
+        const saveBtn = document.getElementById('save-entry');
+        saveBtn.classList.add('success-animation');
+        setTimeout(() => saveBtn.classList.remove('success-animation'), 600);
+        
+        alert('✅ Entry saved successfully!');
     }
 
-    // ... (other methods will be adapted similarly)
+    addExpenseField() {
+        const container = document.getElementById('expenses-container');
+        const newEntry = document.createElement('div');
+        newEntry.className = 'expense-entry';
+        newEntry.innerHTML = `
+            <select class="expense-category">
+                <option value="Food">Food</option>
+                <option value="Amazon">Amazon</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Beauty">Beauty (Nails/Hair)</option>
+                <option value="Coffee">Coffee</option>
+                <option value="Rent">Rent</option>
+                <option value="Car Payment">Car Payment</option>
+                <option value="Insurance">Insurance</option>
+                <option value="Gas">Gas</option>
+                <option value="Other">Other</option>
+            </select>
+            <input type="number" class="expense-amount" min="0" step="0.01" placeholder="Amount">
+            <button type="button" class="remove-expense">×</button>
+        `;
+        
+        container.appendChild(newEntry);
+    }
+
+    clearForm() {
+        document.getElementById('income-amount').value = '';
+        
+        // Clear all expense fields except the first one
+        const container = document.getElementById('expenses-container');
+        while (container.children.length > 1) {
+            container.removeChild(container.lastChild);
+        }
+        
+        // Reset first expense field
+        const firstEntry = container.children[0];
+        firstEntry.querySelector('.expense-category').value = 'Food';
+        firstEntry.querySelector('.expense-amount').value = '';
+        
+        // Reset income type for salary users
+        if (this.users[this.currentUser].jobType === 'salary') {
+            document.getElementById('income-type').value = 'Paycheck';
+        }
+    }
+
+    updateDashboard() {
+        if (!this.currentUser) return;
+        
+        const user = this.users[this.currentUser];
+        const entriesArray = Object.values(user.entries);
+        
+        if (entriesArray.length === 0) {
+            this.showEmptyState();
+            return;
+        }
+
+        // Calculate totals
+        const totalIncome = entriesArray.reduce((sum, entry) => sum + entry.income, 0);
+        const totalExpenses = entriesArray.reduce((sum, entry) => 
+            sum + entry.expenses.reduce((expSum, exp) => expSum + exp.amount, 0), 0
+        );
+        const netSavings = totalIncome - totalExpenses;
+
+        // Update display
+        document.getElementById('total-income').textContent = `$${totalIncome.toFixed(2)}`;
+        document.getElementById('total-expenses').textContent = `$${totalExpenses.toFixed(2)}`;
+        document.getElementById('net-savings').textContent = `$${netSavings.toFixed(2)}`;
+
+        // Update category breakdown
+        this.updateCategoryBreakdown();
+        
+        // Update predictions or monthly overview
+        if (user.jobType === 'server') {
+            this.updatePredictions();
+        } else {
+            this.updateMonthlyOverview();
+        }
+    }
+
+    updateCategoryBreakdown() {
+        const user = this.users[this.currentUser];
+        const categoryTotals = {};
+        
+        Object.values(user.entries).forEach(entry => {
+            entry.expenses.forEach(expense => {
+                categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
+            });
+        });
+
+        const categoryChart = document.getElementById('category-chart');
+        categoryChart.innerHTML = '';
+
+        if (Object.keys(categoryTotals).length === 0) {
+            categoryChart.innerHTML = '<p>No expenses recorded yet</p>';
+            return;
+        }
+
+        Object.entries(categoryTotals).forEach(([category, amount]) => {
+            const item = document.createElement('div');
+            item.className = 'category-item';
+            item.innerHTML = `
+                <span>${category}</span>
+                <span>$${amount.toFixed(2)}</span>
+            `;
+            categoryChart.appendChild(item);
+        });
+    }
+
+    updatePredictions() {
+        const user = this.users[this.currentUser];
+        const predictionResult = document.getElementById('prediction-result');
+        
+        if (Object.keys(user.entries).length < 3) {
+            predictionResult.innerHTML = '<p>Add more data (at least 3 days) to see predictions</p>';
+            return;
+        }
+
+        // Simple prediction based on day of week averages
+        const dayAverages = {};
+        Object.entries(user.entries).forEach(([date, entry]) => {
+            const dayName = new Date(date).toLocaleDateString('en', { weekday: 'long' });
+            if (!dayAverages[dayName]) {
+                dayAverages[dayName] = { total: 0, count: 0 };
+            }
+            dayAverages[dayName].total += entry.income;
+            dayAverages[dayName].count += 1;
+        });
+
+        // Calculate averages and sort
+        const sortedDays = Object.entries(dayAverages)
+            .map(([day, data]) => ({
+                day,
+                average: data.total / data.count
+            }))
+            .sort((a, b) => b.average - a.average);
+
+        predictionResult.innerHTML = '';
+        sortedDays.forEach(dayData => {
+            const item = document.createElement('div');
+            item.className = 'prediction-item';
+            item.innerHTML = `
+                <strong>${dayData.day}</strong>: $${dayData.average.toFixed(2)} average
+            `;
+            predictionResult.appendChild(item);
+        });
+    }
+
+    updateMonthlyOverview() {
+        const user = this.users[this.currentUser];
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        
+        const monthlyEntries = Object.entries(user.entries).filter(([date, entry]) => {
+            const entryDate = new Date(date);
+            return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+        });
+
+        const monthlyIncome = monthlyEntries.reduce((sum, [date, entry]) => sum + entry.income, 0);
+        const monthlyExpenses = monthlyEntries.reduce((sum, [date, entry]) => 
+            sum + entry.expenses.reduce((expSum, exp) => expSum + exp.amount, 0), 0
+        );
+
+        document.getElementById('monthly-income').textContent = `$${monthlyIncome.toFixed(2)}`;
+        document.getElementById('monthly-expenses').textContent = `$${monthlyExpenses.toFixed(2)}`;
+    }
+
+    renderHistory() {
+        if (!this.currentUser) return;
+        
+        const user = this.users[this.currentUser];
+        const entriesList = document.getElementById('entries-list');
+        entriesList.innerHTML = '';
+
+        const sortedDates = Object.keys(user.entries).sort().reverse();
+
+        if (sortedDates.length === 0) {
+            entriesList.innerHTML = '<p>No entries yet. Start by adding your first entry!</p>';
+            return;
+        }
+
+        sortedDates.forEach(date => {
+            const entry = user.entries[date];
+            const entryElement = document.createElement('div');
+            entryElement.className = 'entry-item';
+            
+            const expensesList = entry.expenses.map(exp => 
+                `${exp.category}: $${exp.amount.toFixed(2)}`
+            ).join(', ');
+
+            const incomeType = entry.incomeType ? ` (${entry.incomeType})` : '';
+            
+            entryElement.innerHTML = `
+                <strong>${new Date(date).toLocaleDateString()}</strong>
+                <div>Income: $${entry.income.toFixed(2)}${incomeType}</div>
+                <div class="expense-detail">Expenses: ${expensesList || 'None'}</div>
+            `;
+            
+            entriesList.appendChild(entryElement);
+        });
+    }
+
+    showEmptyState() {
+        document.getElementById('total-income').textContent = '$0';
+        document.getElementById('total-expenses').textContent = '$0';
+        document.getElementById('net-savings').textContent = '$0';
+        document.getElementById('category-chart').innerHTML = '<p>No data yet</p>';
+        
+        const dynamicSection = document.getElementById('dynamic-section');
+        if (dynamicSection.querySelector('#prediction-result')) {
+            document.getElementById('prediction-result').innerHTML = '<p>Add some data to see predictions</p>';
+        }
+    }
 
     clearUserData() {
+        if (!this.currentUser) return;
+        
         if (confirm('Are you sure you want to clear ALL your data? This cannot be undone.')) {
             this.users[this.currentUser].entries = {};
             this.saveUsers();
