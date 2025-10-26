@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Dashboard Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-container">
+        <div class="login-card">
+            <h1>💰 Financial Dashboard Pro</h1>
+            <p>Track your finances your way</p>
+            
+            <div class="form-group">
+                <label for="username">Choose Your Username:</label>
+                <input type="text" id="username" placeholder="Enter your name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="job-type">How do you earn money?</label>
+                <select id="job-type" required>
+                    <option value="">Select your job type</option>
+                    <option value="server">Server/Tips-based Job</option>
+                    <option value="salary">Salary/Paycheck Job</option>
+                </select>
+            </div>
+            
+            <button id="login-btn" class="btn">Get Started</button>
+            
+            <div id="user-list" class="user-list">
+                <h3>Existing Users:</h3>
+                <!-- Dynamic user list will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (Hidden until login) -->
+    <div id="app" class="container" style="display: none;">
+        <header>
+            <h1>💎 <span id="user-greeting">Welcome</span>'s Financial Dashboard</h1>
+            <p id="job-type-display"></p>
+            <button id="logout-btn" class="btn btn-secondary">👤 Switch User</button>
+        </header>
+
+        <!-- Data Entry Section -->
+        <section class="entry-form">
+            <h2>Add Financial Entry</h2>
+            <div class="form-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" required>
+            </div>
+            
+            <!-- Dynamic Income Section based on job type -->
+            <div id="income-section">
+                <!-- This will be filled by JavaScript -->
+            </div>
+            
+            <div class="expenses-section">
+                <h3>💰 Expenses</h3>
+                <div id="expenses-container">
+                    <div class="expense-entry">
+                        <select class="expense-category">
+                            <option value="Food">Food</option>
+                            <option value="Amazon">Amazon</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Beauty">Beauty (Nails/Hair)</option>
+                            <option value="Coffee">Coffee</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Car Payment">Car Payment</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Gas">Gas</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input type="number" class="expense-amount" min="0" step="0.01" placeholder="Amount">
+                        <button type="button" class="remove-expense">×</button>
+                    </div>
+                </div>
+                <button type="button" id="add-expense" class="btn btn-secondary">+ Add Another Expense</button>
+            </div>
+            
+            <button type="button" id="save-entry" class="btn">💾 Save Entry</button>
+        </section>
+
+        <!-- Analytics Dashboard -->
+        <section class="dashboard">
+            <h2>📊 Financial Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 id="income-label">Total Income</h3>
+                    <p id="total-income">$0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Expenses</h3>
+                    <p id="total-expenses">$0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Net Savings</h3>
+                    <p id="net-savings">$0</p>
+                </div>
+            </div>
+
+            <!-- Spending by Category -->
+            <div class="category-breakdown">
+                <h3>📈 Spending by Category</h3>
+                <div id="category-chart"></div>
+            </div>
+
+            <!-- Dynamic Section based on job type -->
+            <div id="dynamic-section">
+                <!-- For servers: Tip predictions -->
+                <!-- For salary: Monthly overview -->
+            </div>
+        </section>
+
+        <!-- Data History -->
+        <section class="history">
+            <h2>📋 History</h2>
+            <div id="entries-list"></div>
+            <button id="clear-user-data" class="btn btn-danger">🗑️ Clear My Data</button>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
