@@ -42,7 +42,7 @@ class MultiUserFinancialDashboard {
             this.users[username] = {
                 jobType: jobType,
                 entries: {},
-                paychecks: {}, // New: Store paycheck amounts by month
+                paychecks: {},
                 createdAt: new Date().toISOString()
             };
             this.saveUsers();
@@ -63,7 +63,6 @@ class MultiUserFinancialDashboard {
         document.getElementById('app').style.display = 'block';
         
         this.updateUserInterface();
-        this.setupEventListeners();
         this.updateDashboard();
         this.renderHistory();
     }
@@ -72,7 +71,6 @@ class MultiUserFinancialDashboard {
         document.getElementById('login-screen').style.display = 'block';
         document.getElementById('app').style.display = 'none';
         
-        // Clear form
         document.getElementById('username').value = '';
         document.getElementById('job-type').value = '';
     }
@@ -80,12 +78,10 @@ class MultiUserFinancialDashboard {
     updateUserInterface() {
         const user = this.users[this.currentUser];
         
-        // Update greetings and job type display
         document.getElementById('user-greeting').textContent = this.currentUser;
         document.getElementById('job-type-display').textContent = 
             user.jobType === 'server' ? '💰 Server - Track your daily tips & paycheck' : '💼 Salary - Manage your income & expenses';
 
-        // Update income section based on job type
         const incomeSection = document.getElementById('income-section');
         if (user.jobType === 'server') {
             incomeSection.innerHTML = `
@@ -104,11 +100,6 @@ class MultiUserFinancialDashboard {
                 </div>
             `;
             document.getElementById('income-label').textContent = 'Total Income';
-            
-            // Add paycheck toggle event
-            document.getElementById('include-paycheck').addEventListener('change', (e) => {
-                document.getElementById('paycheck-section').style.display = e.target.checked ? 'block' : 'none';
-            });
         } else {
             incomeSection.innerHTML = `
                 <div class="form-group">
@@ -128,7 +119,6 @@ class MultiUserFinancialDashboard {
             document.getElementById('income-label').textContent = 'Total Income';
         }
 
-        // Update dynamic section
         const dynamicSection = document.getElementById('dynamic-section');
         if (user.jobType === 'server') {
             dynamicSection.innerHTML = `
@@ -159,9 +149,6 @@ class MultiUserFinancialDashboard {
                     </div>
                 </div>
             `;
-            
-            // Add paycheck button event
-            document.getElementById('add-paycheck-btn').addEventListener('click', () => this.showPaycheckModal());
         } else {
             dynamicSection.innerHTML = `
                 <div class="monthly-overview">
@@ -183,24 +170,43 @@ class MultiUserFinancialDashboard {
                 </div>
             `;
         }
+
+        // Setup event listeners AFTER updating the UI
+        this.setupEventListeners();
     }
 
     setupEventListeners() {
-        // Remove existing listeners to avoid duplicates
-        const saveBtn = document.getElementById('save-entry');
-        const addExpenseBtn = document.getElementById('add-expense');
-        const clearBtn = document.getElementById('clear-user-data');
+        // Clear existing listeners by recreating elements
+        const elementsToReset = ['save-entry', 'add-expense', 'clear-user-data', 'add-paycheck-btn'];
+        
+        elementsToReset.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                const newElement = element.cloneNode(true);
+                element.parentNode.replaceChild(newElement, element);
+            }
+        });
 
-        saveBtn.replaceWith(saveBtn.cloneNode(true));
-        addExpenseBtn.replaceWith(addExpenseBtn.cloneNode(true));
-        clearBtn.replaceWith(clearBtn.cloneNode(true));
-
-        // Add new listeners
+        // Add event listeners
         document.getElementById('save-entry').addEventListener('click', () => this.saveEntry());
         document.getElementById('add-expense').addEventListener('click', () => this.addExpenseField());
         document.getElementById('clear-user-data').addEventListener('click', () => this.clearUserData());
 
-        // Add event listener for remove buttons
+        // Add paycheck button listener if it exists
+        const paycheckBtn = document.getElementById('add-paycheck-btn');
+        if (paycheckBtn) {
+            paycheckBtn.addEventListener('click', () => this.showPaycheckModal());
+        }
+
+        // Add paycheck checkbox listener if it exists
+        const paycheckCheckbox = document.getElementById('include-paycheck');
+        if (paycheckCheckbox) {
+            paycheckCheckbox.addEventListener('change', (e) => {
+                document.getElementById('paycheck-section').style.display = e.target.checked ? 'block' : 'none';
+            });
+        }
+
+        // Add remove expense listeners
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-expense')) {
                 const container = document.getElementById('expenses-container');
@@ -240,9 +246,7 @@ class MultiUserFinancialDashboard {
         }
 
         const dateInput = document.getElementById('date').value;
-        // Fix timezone issue - force to local date
         const date = new Date(dateInput + 'T00:00:00').toISOString().split('T')[0];
-        
         const incomeInput = document.getElementById('income-amount').value;
         
         if (!dateInput || !incomeInput) {
@@ -278,22 +282,25 @@ class MultiUserFinancialDashboard {
         if (user.jobType === 'server') {
             const includePaycheck = document.getElementById('include-paycheck').checked;
             if (includePaycheck) {
-                const paycheckAmount = parseFloat(document.getElementById('paycheck-amount').value);
-                if (!isNaN(paycheckAmount) && paycheckAmount > 0) {
-                    const monthYear = new Date(dateInput).toISOString().slice(0, 7); // YYYY-MM format
-                    user.paychecks[monthYear] = paycheckAmount;
+                const paycheckAmountInput = document.getElementById('paycheck-amount').value;
+                if (paycheckAmountInput && paycheckAmountInput !== '') {
+                    const paycheckAmount = parseFloat(paycheckAmountInput);
+                    if (!isNaN(paycheckAmount) && paycheckAmount > 0) {
+                        const monthYear = new Date(dateInput).toISOString().slice(0, 7);
+                        user.paychecks[monthYear] = paycheckAmount;
+                        console.log('Paycheck saved:', monthYear, paycheckAmount);
+                    }
                 }
             }
         }
 
-        // Save entry with additional data
+        // Save entry
         const entryData = {
             income,
             expenses,
             jobType: user.jobType
         };
 
-        // Add income type for salary users
         if (user.jobType === 'salary') {
             entryData.incomeType = document.getElementById('income-type').value;
         }
@@ -305,16 +312,11 @@ class MultiUserFinancialDashboard {
         this.renderHistory();
         this.clearForm();
         
-        // Add success animation
-        const saveBtn = document.getElementById('save-entry');
-        saveBtn.classList.add('success-animation');
-        setTimeout(() => saveBtn.classList.remove('success-animation'), 600);
-        
         alert('✅ Entry saved successfully for ' + new Date(dateInput).toLocaleDateString() + '!');
     }
 
     showPaycheckModal() {
-        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+        const currentMonth = new Date().toISOString().slice(0, 7);
         const user = this.users[this.currentUser];
         const currentPaycheck = user.paychecks[currentMonth] || 0;
         
@@ -360,18 +362,15 @@ class MultiUserFinancialDashboard {
     clearForm() {
         document.getElementById('income-amount').value = '';
         
-        // Clear all expense fields except the first one
         const container = document.getElementById('expenses-container');
         while (container.children.length > 1) {
             container.removeChild(container.lastChild);
         }
         
-        // Reset first expense field
         const firstEntry = container.children[0];
         firstEntry.querySelector('.expense-category').value = 'Food';
         firstEntry.querySelector('.expense-amount').value = '';
         
-        // Reset paycheck section for servers
         if (this.users[this.currentUser].jobType === 'server') {
             document.getElementById('include-paycheck').checked = false;
             document.getElementById('paycheck-section').style.display = 'none';
@@ -380,7 +379,6 @@ class MultiUserFinancialDashboard {
             document.getElementById('income-type').value = 'Paycheck';
         }
         
-        // Reset date to today
         const today = new Date();
         const formattedToday = today.toISOString().split('T')[0];
         document.getElementById('date').value = formattedToday;
@@ -392,13 +390,11 @@ class MultiUserFinancialDashboard {
         const user = this.users[this.currentUser];
         const entriesArray = Object.values(user.entries);
         
-        // Calculate totals
         const totalIncome = entriesArray.reduce((sum, entry) => sum + entry.income, 0);
         const totalExpenses = entriesArray.reduce((sum, entry) => 
             sum + entry.expenses.reduce((expSum, exp) => expSum + exp.amount, 0), 0
         );
         
-        // Add paychecks to total income for servers
         let totalWithPaychecks = totalIncome;
         if (user.jobType === 'server') {
             const totalPaychecks = Object.values(user.paychecks).reduce((sum, amount) => sum + amount, 0);
@@ -407,15 +403,12 @@ class MultiUserFinancialDashboard {
         
         const netSavings = totalWithPaychecks - totalExpenses;
 
-        // Update display
         document.getElementById('total-income').textContent = `$${totalWithPaychecks.toFixed(2)}`;
         document.getElementById('total-expenses').textContent = `$${totalExpenses.toFixed(2)}`;
         document.getElementById('net-savings').textContent = `$${netSavings.toFixed(2)}`;
 
-        // Update category breakdown
         this.updateCategoryBreakdown();
         
-        // Update predictions or monthly overview
         if (user.jobType === 'server') {
             this.updatePredictions();
             this.updateServerMonthlyOverview();
@@ -429,7 +422,6 @@ class MultiUserFinancialDashboard {
         const currentMonth = new Date().toISOString().slice(0, 7);
         const currentPaycheck = user.paychecks[currentMonth] || 0;
         
-        // Calculate monthly tips
         const monthlyTips = Object.entries(user.entries)
             .filter(([date, entry]) => date.startsWith(currentMonth))
             .reduce((sum, [date, entry]) => sum + entry.income, 0);
@@ -479,7 +471,6 @@ class MultiUserFinancialDashboard {
             return;
         }
 
-        // Simple prediction based on day of week averages
         const dayAverages = {};
         Object.entries(user.entries).forEach(([date, entry]) => {
             const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en', { weekday: 'long' });
@@ -490,7 +481,6 @@ class MultiUserFinancialDashboard {
             dayAverages[dayName].count += 1;
         });
 
-        // Calculate averages and sort
         const sortedDays = Object.entries(dayAverages)
             .map(([day, data]) => ({
                 day,
@@ -552,8 +542,6 @@ class MultiUserFinancialDashboard {
             ).join(', ');
 
             const incomeType = entry.incomeType ? ` (${entry.incomeType})` : '';
-            
-            // Fix timezone display issue
             const displayDate = new Date(date + 'T00:00:00').toLocaleDateString();
             
             entryElement.innerHTML = `
@@ -565,7 +553,6 @@ class MultiUserFinancialDashboard {
             entriesList.appendChild(entryElement);
         });
 
-        // Show paycheck history for servers
         if (user.jobType === 'server' && Object.keys(user.paychecks).length > 0) {
             const paycheckHeader = document.createElement('h3');
             paycheckHeader.textContent = '💰 Paycheck History';
